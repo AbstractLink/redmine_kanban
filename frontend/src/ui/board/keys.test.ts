@@ -69,6 +69,30 @@ describe('board keys helpers', () => {
     expect(laneIdToCategory(categoryData, 'no_category', 5)).toBeNull();
   });
 
+  it('resolves the lane id from a custom field value', () => {
+    const cfData: BoardData = {
+      ...baseData,
+      meta: { ...baseData.meta, lane_type: 'cf_7' },
+      lanes: [
+        { id: 'cfv_0', name: 'Alpha', custom_field_value: 'alpha' },
+        { id: 'cfv_1', name: 'Beta', custom_field_value: 'beta' },
+        { id: 'no_cf_value', name: '(not set)', custom_field_value: null },
+      ],
+    };
+
+    expect(resolveBoardLaneId(cfData, { ...baseIssue, custom_field_values: { cf_7: 'beta' } })).toBe('cfv_1');
+    expect(resolveBoardLaneId(cfData, { ...baseIssue, custom_field_values: { cf_7: null } })).toBe('no_cf_value');
+    expect(resolveBoardLaneId(cfData, baseIssue)).toBe('no_cf_value');
+    // un valor que ya no esta entre los posibles cae al carril de sin valor
+    expect(resolveBoardLaneId(cfData, { ...baseIssue, custom_field_values: { cf_7: 'gamma' } })).toBe('no_cf_value');
+  });
+
+  it('parses cell keys for custom field lanes', () => {
+    const cfData: BoardData = { ...baseData, meta: { ...baseData.meta, lane_type: 'cf_7' } };
+    expect(parseCellKey('5:cfv_2', cfData)).toEqual([5, 'cfv_2']);
+    expect(parseCellKey('5:no_cf_value', cfData)).toEqual([5, 'no_cf_value']);
+  });
+
   it('leaves the category untouched when the board is not laned by category', () => {
     const assigneeData: BoardData = { ...baseData, meta: { ...baseData.meta, lane_type: 'assignee' } };
     expect(laneIdToCategory(assigneeData, 'unassigned', 7)).toBe(7);

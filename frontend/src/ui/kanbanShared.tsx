@@ -3,6 +3,7 @@ import type { BoardApiResponse, BoardData, BoardIssueEntity, Issue, Lane, Subtas
 import { findSubtaskInTree } from './subtasksTree';
 import { isHttpError } from './http';
 import type { LaneType } from './useKanbanPreferences';
+import { isCustomFieldLaneType } from './useKanbanPreferences';
 
 export type FitMode = 'none' | 'width';
 
@@ -240,6 +241,25 @@ export function buildDisplayData(
       },
     ];
     return { ...data, meta, lanes: categoryLanes };
+  }
+
+  if (isCustomFieldLaneType(laneType)) {
+    const definition = (data.lists.custom_field_lanes ?? []).find((it) => it.id === laneType);
+    const customFieldLanes: Lane[] = [
+      ...(definition?.possible_values ?? []).map((option, index) => ({
+        id: `cfv_${index}`,
+        name: option.name,
+        custom_field_value: option.value,
+        assigned_to_id: null,
+      })),
+      {
+        id: 'no_cf_value',
+        name: data.labels.not_set,
+        custom_field_value: null,
+        assigned_to_id: null,
+      },
+    ];
+    return { ...data, meta, lanes: customFieldLanes };
   }
 
   const prioritiesHighToLow = [...(data.lists.priorities ?? [])].reverse();

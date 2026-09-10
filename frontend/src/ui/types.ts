@@ -11,6 +11,7 @@ export type Lane = {
   assigned_to_id?: number | null;
   priority_id?: number | null;
   category_id?: number | null;
+  custom_field_value?: string | null;
 };
 
 export type Subtask = {
@@ -28,6 +29,7 @@ export type Subtask = {
   priority_name?: string | null;
   category_id?: number | null;
   category_name?: string | null;
+  custom_field_values?: Record<string, string | null>;
   is_closed: boolean;
   lock_version?: number;
   updated_on?: string | null;
@@ -78,6 +80,7 @@ export type Issue = {
   priority_name?: string | null;
   category_id?: number | null;
   category_name?: string | null;
+  custom_field_values?: Record<string, string | null>;
   start_date?: string | null;
   updated_on?: string | null;
   aging_days?: number;
@@ -92,11 +95,20 @@ export type Issue = {
   project?: { id: number; name: string };
 };
 
+export type CustomFieldLane = {
+  id: string;
+  cf_id: number;
+  name: string;
+  field_format: string;
+  possible_values: { value: string; name: string }[];
+};
+
 export type Lists = {
   assignees: { id: number | null; name: string }[];
   trackers: TrackerListItem[];
   priorities: { id: number; name: string }[];
   categories?: { id: number; name: string; project_id?: number }[];
+  custom_field_lanes?: CustomFieldLane[];
   projects: ProjectListItem[];
   viewable_projects: ProjectListItem[];
   creatable_projects: ProjectListItem[];
@@ -112,7 +124,7 @@ export type Meta = {
   can_move: boolean;
   can_create: boolean;
   can_delete: boolean;
-  lane_type: 'none' | 'assignee' | 'priority' | 'category';
+  lane_type: 'none' | 'assignee' | 'priority' | 'category' | `cf_${number}`;
   aging_warn_days: number;
   aging_danger_days: number;
   aging_exclude_closed: boolean;

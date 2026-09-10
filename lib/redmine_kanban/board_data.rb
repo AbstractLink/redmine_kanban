@@ -296,11 +296,17 @@ module RedmineKanban
         issue_ids = snapshot[:ids]
 
         issues = fetch_issues(issue_ids)
+        # `lists` se calcula ANTES del presenter a proposito: de ahi salen los
+        # campos que pueden ser carril, y el presenter necesita saberlos para
+        # decidir qué valores serializa en cada tarjeta.
+        lists = without_snapshot_query_count { cached_lists }
+        lane_cf_ids = Array(lists[:custom_field_lanes]).map { |cf| cf[:cf_id] }
         presenter = IssueEntityPresenter.new(
           user: @user,
           board_project: @project,
           workflow_status_resolver: BoardWorkflowStatusResolver.new(user: @user, issues: issues),
-          permission_policy: permission_policy
+          permission_policy: permission_policy,
+          lane_custom_field_ids: lane_cf_ids
         )
         warm_permission_cache(issues)
         entities = presenter.issues_to_h(issues)
@@ -309,7 +315,6 @@ module RedmineKanban
         lanes = build_lanes(lane_assignee_ids)
 
         counts = fetch_column_counts(status_ids)
-        lists = without_snapshot_query_count { cached_lists }
         labels = without_snapshot_query_count { cached_labels }
       ensure
         @count_snapshot_queries = false
@@ -377,7 +382,7 @@ module RedmineKanban
     def fetch_issues(issue_ids)
       Issue.visible(@user)
            .where(id: issue_ids, project_id: @project_ids)
-           .includes(:assigned_to, :author, :priority, :status, :project, :tracker, :category)
+           .includes(:assigned_to, :author, :priority, :status, :project, :tracker, :category, :custom_values)
            .order(updated_on: :desc, id: :desc)
            .to_a
     end

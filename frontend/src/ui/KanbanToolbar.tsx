@@ -265,6 +265,7 @@ export function KanbanToolbar({
           onToggleShowSubtasks={onToggleShowSubtasks}
           laneType={laneType}
           onChangeLaneType={onChangeLaneType}
+          customFieldLanes={data.lists.custom_field_lanes ?? []}
           agingWarnDays={agingWarnDays}
           onChangeAgingWarnDays={onChangeAgingWarnDays}
           agingDangerDays={agingDangerDays}

@@ -2,12 +2,13 @@ require_relative 'board_issue_presenter'
 
 module RedmineKanban
   class IssueEntityPresenter
-    def initialize(user:, board_project: nil, workflow_status_resolver: nil, permission_policy: nil)
+    def initialize(user:, board_project: nil, workflow_status_resolver: nil, permission_policy: nil, lane_custom_field_ids: [])
       @presenter = BoardIssuePresenter.new(
         user: user,
         board_project: board_project,
         workflow_status_resolver: workflow_status_resolver,
-        permission_policy: permission_policy
+        permission_policy: permission_policy,
+        lane_custom_field_ids: lane_custom_field_ids
       )
     end
 

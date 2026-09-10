@@ -2,8 +2,12 @@ require 'set'
 
 module RedmineKanban
   class BoardIssuePresenter
-    def initialize(user:, subtasks_by_parent_id: {}, board_project: nil, workflow_status_resolver: nil, permission_policy: nil)
+    def initialize(user:, subtasks_by_parent_id: {}, board_project: nil, workflow_status_resolver: nil, permission_policy: nil, lane_custom_field_ids: [])
       @user = user
+      # Solo se serializan los campos que pueden ser carril: el tablero admite
+      # hasta 1500 tarjetas y volcar todos los campos personalizados de cada una
+      # engordaria la respuesta sin que nadie lo use.
+      @lane_custom_field_ids = Array(lane_custom_field_ids).map(&:to_i)
       @subtasks_by_parent_id = subtasks_by_parent_id
       @board_project = board_project
       @workflow_status_resolver = workflow_status_resolver
@@ -43,6 +47,7 @@ module RedmineKanban
         priority_name: issue.priority&.name,
         category_id: issue.category_id,
         category_name: issue.category&.name,
+        custom_field_values: lane_custom_field_values_for(issue),
         done_ratio: issue.done_ratio,
         updated_on: updated_on_for(issue)&.iso8601,
         aging_days: self.class.aging_days_for(issue),
@@ -64,6 +69,22 @@ module RedmineKanban
     end
 
     private
+
+    # { "cf_3" => "phil" } solo para los campos que pueden ser carril.
+    # Se lee de `custom_values` y no de `custom_field_values` porque lo segundo
+    # instancia un objeto por campo y por peticion; con 1500 tarjetas eso se
+    # nota. `custom_values` viene precargado desde BoardData.
+    def lane_custom_field_values_for(issue)
+      return {} if @lane_custom_field_ids.empty?
+      return {} unless issue.respond_to?(:custom_values)
+
+      issue.custom_values.each_with_object({}) do |cv, acc|
+        next unless @lane_custom_field_ids.include?(cv.custom_field_id)
+
+        value = cv.value
+        acc["cf_#{cv.custom_field_id}"] = value.presence
+      end
+    end
 
     def permission_policy
       @permission_policy
@@ -124,6 +145,7 @@ module RedmineKanban
         priority_name: issue.respond_to?(:priority) && issue.priority ? issue.priority.name : nil,
         category_id: issue.respond_to?(:category_id) ? issue.category_id : nil,
         category_name: issue.respond_to?(:category) && issue.category ? issue.category.name : nil,
+        custom_field_values: lane_custom_field_values_for(issue),
         is_closed: issue.status.is_closed?,
         lock_version: issue.lock_version,
         updated_on: updated_on_for(issue)&.iso8601,

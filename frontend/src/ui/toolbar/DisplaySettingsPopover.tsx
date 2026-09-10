@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { FitMode } from '../kanbanShared';
 import { DEFAULT_MAXIMUM_BOARD_ENTITY_COUNT, MAXIMUM_BOARD_ENTITY_COUNT, parseMaximumBoardEntityCount, type LaneType } from '../useKanbanPreferences';
+import type { CustomFieldLane } from '../types';
 import { useDropdownDismiss } from './useDropdownDismiss';
 
 const FONT_SIZE_OPTIONS = ['10', '12', '14', '16', '18', '20', '22', '24', '26', '28', '30'] as const;
@@ -33,6 +34,7 @@ export function DisplaySettingsPopover({
   onToggleShowSubtasks,
   laneType,
   onChangeLaneType,
+  customFieldLanes = [],
   agingWarnDays,
   onChangeAgingWarnDays,
   agingDangerDays,
@@ -54,6 +56,7 @@ export function DisplaySettingsPopover({
   onToggleShowSubtasks: () => void;
   laneType: LaneType;
   onChangeLaneType: (value: LaneType) => void;
+  customFieldLanes?: CustomFieldLane[];
   agingWarnDays: number;
   onChangeAgingWarnDays: (value: number) => void;
   agingDangerDays: number;
@@ -100,6 +103,7 @@ export function DisplaySettingsPopover({
             { id: 'assignee', name: labels.assignee },
             { id: 'priority', name: labels.issue_priority },
             { id: 'category', name: labels.category },
+            ...customFieldLanes.map((cf) => ({ id: cf.id, name: cf.name })),
           ]} onChange={(value) => onChangeLaneType(value as LaneType)} />
           <SettingsSelect label={labels.aging_warn_days} value={String(agingWarnDays)} options={[0, 1, 3, 5, 7, 14, 30].map((value) => ({ id: String(value), name: String(value) }))} onChange={(value) => onChangeAgingWarnDays(Number(value))} selectClassName="rk-settings-aging-days-select" />
           <SettingsSelect label={labels.aging_danger_days} value={String(agingDangerDays)} options={[1, 3, 5, 7, 14, 30, 60].map((value) => ({ id: String(value), name: String(value) }))} onChange={(value) => onChangeAgingDangerDays(Number(value))} selectClassName="rk-settings-aging-days-select" />

@@ -59,7 +59,11 @@ vi.mock('./http', () => ({
   postJson: vi.fn(),
 }));
 
-vi.mock('./useKanbanPreferences', () => ({
+// Se parte del modulo real y solo se sobrescribe el hook: asi el mock no se
+// rompe cada vez que el modulo gana un export (p. ej. isCustomFieldLaneType,
+// que board/keys.ts usa para resolver el carril).
+vi.mock('./useKanbanPreferences', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./useKanbanPreferences')>()),
   useKanbanPreferences: () => ({
     projectScope: '/projects/demo/kanban',
     preferencesReady: true,

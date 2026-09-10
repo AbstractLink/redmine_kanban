@@ -112,6 +112,63 @@ describe('buildDisplayData with category swimlanes', () => {
   });
 });
 
+describe('buildDisplayData with custom field swimlanes', () => {
+  const aging = { warnDays: 3, dangerDays: 7, excludeClosed: true };
+
+  function cfBoard(): BoardData {
+    const data = makeBoardData([
+      makeIssue(10, { custom_field_values: { cf_7: 'alpha' } }),
+      makeIssue(11, { custom_field_values: { cf_7: 'beta' } }),
+      makeIssue(12, { custom_field_values: { cf_7: null } }),
+      makeIssue(13, {}),
+    ]);
+    return {
+      ...data,
+      lists: {
+        ...data.lists,
+        custom_field_lanes: [{
+          id: 'cf_7', cf_id: 7, name: 'Sample field', field_format: 'list',
+          possible_values: [
+            { value: 'alpha', name: 'Alpha' },
+            { value: 'beta', name: 'Beta' },
+          ],
+        }],
+      },
+      labels: { not_set: '(not set)' },
+    };
+  }
+
+  it('builds one lane per possible value plus an unset lane', () => {
+    const result = buildDisplayData(cfBoard(), 'cf_7', aging);
+
+    expect(result.meta.lane_type).toBe('cf_7');
+    expect(result.lanes.map((lane) => lane.id)).toEqual(['cfv_0', 'cfv_1', 'no_cf_value']);
+    expect(result.lanes.map((lane) => lane.name)).toEqual(['Alpha', 'Beta', '(not set)']);
+    expect(result.lanes.map((lane) => lane.custom_field_value)).toEqual(['alpha', 'beta', null]);
+  });
+
+  it('uses opaque lane ids so a value containing a colon cannot split the cell key', () => {
+    const board = cfBoard();
+    board.lists.custom_field_lanes![0].possible_values = [{ value: 'a:b', name: 'a:b' }];
+    const result = buildDisplayData(board, 'cf_7', aging);
+
+    expect(result.lanes[0].id).toBe('cfv_0');
+    expect(result.lanes[0].custom_field_value).toBe('a:b');
+  });
+
+  it('yields only the unset lane when the field is not laneable here', () => {
+    const result = buildDisplayData(cfBoard(), 'cf_99', aging);
+
+    expect(result.lanes.map((lane) => lane.id)).toEqual(['no_cf_value']);
+  });
+
+  it('never lanes by assignee while laning by a custom field', () => {
+    const result = buildDisplayData(cfBoard(), 'cf_7', aging);
+
+    expect(result.lanes.every((lane) => lane.assigned_to_id === null)).toBe(true);
+  });
+});
+
 describe('resolveBoardIssue', () => {
   it('resolves top-level issues with existing urls', () => {
     const data = makeBoardData([makeIssue(10, { subject: 'Top level', project: { id: 3, name: 'Subproject' } })]);
